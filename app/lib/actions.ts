@@ -68,6 +68,7 @@ export async function createInvoice(prevState: State, formData: FormData) {
   }
 
   // Revalidate the cache for the invoices page and redirect the user.
+  // 重新验证发票页面的缓存并重定向用户。
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
 }

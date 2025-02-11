@@ -40,6 +40,7 @@ export type LatestInvoice = {
 };
 
 // The database returns a number for amount, but we later format it to a string with the formatCurrency function
+// 数据库返回数量的数字，但我们稍后将其格式化为带有FormatCurrency函数的字符串
 export type LatestInvoiceRaw = Omit<LatestInvoice, 'amount'> & {
   amount: number;
 };

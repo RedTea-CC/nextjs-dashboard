@@ -16,7 +16,6 @@ export async function fetchRevenue() {
   // This is equivalent to in fetch(..., {cache: 'no-store'}).
   noStore();
 
-
   try {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
@@ -38,6 +37,7 @@ export async function fetchRevenue() {
 export async function fetchLatestInvoices() {
   noStore();
   try {
+    // 查询最新的5条发票记录，并获取相关的客户信息
     const data = await sql<LatestInvoiceRaw>`
       SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
       FROM invoices
@@ -62,23 +62,46 @@ export async function fetchCardData() {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate
     // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
+    // 您可能可以将这些组合成一个SQL查询，但是，我们有意将它们拆分以演示如何使用JS并行初始化多个查询
 
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
+    // const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
+    // const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
+    // const invoiceStatusPromise = sql`SELECT
+    //      SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
+    //      SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
+    //      FROM invoices`;
 
-    const numberOfInvoices = Number(data[0].rows[0].count ?? '0');
-    const numberOfCustomers = Number(data[1].rows[0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? '0');
+    // const data = await Promise.all([
+    //   invoiceCountPromise,
+    //   customerCountPromise,
+    //   invoiceStatusPromise,
+    // ]);
+
+    // const numberOfInvoices = Number(data[0].rows[0].count ?? '0');
+    // const numberOfCustomers = Number(data[1].rows[0].count ?? '0');
+    // const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0');
+    // const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? '0');
+
+    const combinedQuery = sql`
+      SELECT
+        (SELECT COUNT(*) FROM invoices) AS invoice_count,
+        (SELECT COUNT(*) FROM customers) AS customer_count,
+        (SELECT
+          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS paid,
+          SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS pending
+        FROM invoices) AS invoice_status
+    `;
+
+    const data = await combinedQuery;
+
+    const numberOfInvoices = Number(data.rows[0].invoice_count ?? '0');
+    const numberOfCustomers = Number(data.rows[0].customer_count ?? '0');
+    const totalPaidInvoices = formatCurrency(
+      data.rows[0].invoice_status.paid ?? '0',
+    );
+    const totalPendingInvoices = formatCurrency(
+      data.rows[0].invoice_status.pending ?? '0',
+    );
 
     return {
       numberOfCustomers,
