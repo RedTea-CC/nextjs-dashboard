@@ -41,7 +41,7 @@ export async function createInvoice(prevState: State, formData: FormData) {
     amount: formData.get('amount'),
     status: formData.get('status'),
   });
-  // If form validation fails, return errors early. Otherwise, continue.
+  // 如果表单验证失败，提前返回错误。否则，继续。
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
@@ -49,25 +49,24 @@ export async function createInvoice(prevState: State, formData: FormData) {
     };
   }
 
-  // Prepare data for insertion into the database
+  // 准备数据插入数据库
   const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
-  // Insert data into the database
+  // 插入数据到数据库
   try {
     await sql`
       INSERT INTO invoices (customer_id, amount, status, date)
       VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
     `;
   } catch (error) {
-    // If a database error occurs, return a more specific error.
+    // 如果数据库错误发生，返回一个更具体的错误。
     return {
       message: 'Database Error: Failed to Create Invoice.',
     };
   }
 
-  // Revalidate the cache for the invoices page and redirect the user.
   // 重新验证发票页面的缓存并重定向用户。
   revalidatePath('/dashboard/invoices');
   redirect('/dashboard/invoices');
